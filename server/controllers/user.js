@@ -38,7 +38,7 @@ exports.add = async(req, res) => {
       rules: 'int|in[1,2,3]'
     },
     role: {
-      rules: 'int|between[1, 200]'
+      rules: 'int|between[1, 199]'
     },
     jurisdiction: {
       rules: 'array'
@@ -167,7 +167,7 @@ exports.update = async(req, res) => {
       rules: 'int|in[1,2,3]'
     },
     role: {
-      rules: 'int|between[1, 101]'
+      rules: 'int|between[1, 100]'
     },
     jurisdiction: {
       rules: 'array'
@@ -277,16 +277,8 @@ exports.updateEnabled = async(req, res) => {
 
   //当用户是超管时，判断超管数量是否为大于1，
   //如果是最后一个超管时，禁止操作
-  if (user.role === 200) {
-    const count = await User.count({
-      deleted: false,
-      role: 200,
-      enabled: true
-    })
-
-    if (count < 2)
-      return res.json(R.error(403, 'System administrators are forbidden to set disabled'))
-  }
+  if (user.role === 200)
+    return res.json(R.error(403, 'System administrators are forbidden to set disabled'))
 
   await User.findOneAndUpdate({
       _id: id
@@ -321,16 +313,8 @@ exports.remove = async(req, res) => {
 
   //当用户是超管时，判断超管数量是否为大于1，
   //如果是最后一个超管时，禁止删除
-  if (user.role === 200) {
-    const count = await User.count({
-      deleted: false,
-      role: 200,
-      enabled: true
-    })
-
-    if (count < 2)
-      return res.json(R.error(403, 'System administrators are forbidden to delete'))
-  }
+  if (user.role === 200)
+    return res.json(R.error(403, 'System administrators are forbidden to delete'))
 
 
   await User.findOneAndUpdate({

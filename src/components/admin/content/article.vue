@@ -39,14 +39,14 @@
                     <span class="icon"></span>
                   </label>
                 </th>
-                <th width="25%">标题</th>
+                <th width="30%">标题</th>
                 <th width="10%">分类</th>
+                <th width="8%">
+                  <mo-sort v-model="params.sort" name="draft" :type="params.sortType" @change="sortChange">状态</mo-sort>
+                </th>
                 <th width="10%">创建者</th>
                 <th width="8%">
                   <mo-sort v-model="params.sort" name="views" :type="params.sortType" @change="sortChange">浏览</mo-sort>
-                </th>
-                <th width="8%">
-                  <mo-sort v-model="params.sort" name="draft" :type="params.sortType" @change="sortChange">状态</mo-sort>
                 </th>
                 <th width="12%">
                   <mo-sort v-model="params.sort" name="create" :type="params.sortType" @change="sortChange">创建时间</mo-sort>
@@ -54,7 +54,7 @@
                 <th width="12%">
                   <mo-sort v-model="params.sort" name="update" :type="params.sortType" @change="sortChange">最后修改</mo-sort>
                 </th>
-                <th width="15%" align="right">编辑 | 删除</th>
+                <th width="10%" align="right">编辑 | 删除</th>
               </tr>
             </thead>
             <tbody>
@@ -72,12 +72,12 @@
                   <template v-if="item.category">{{item.category.name}}</template>
                   <span class="mo-text-negative" v-else>未分类</span>
                 </td>
-                <td>{{item.user.nick}}</td>
-                <td>{{item.count.views}}</td>
                 <td>
                   <span class="mo-text-negative" v-if="item.draft">草稿</span>
                   <span class="mo-text-positive" v-else>已发布</span>
                 </td>
+                <td>{{item.user.nick}}</td>
+                <td>{{item.count.views}}</td>
                 <td>{{item.createTime | formatDate('yy-MM-dd hh:mm')}}</td>
                 <td>{{item.updateTime | formatDate('yy-MM-dd hh:mm')}}</td>
                 <td align="right">
@@ -95,7 +95,7 @@
           </table>
         </div>
       </div>
-      <div class="mb-panel-foot">
+      <div class="mb-panel-foot" v-if="count">
         <div class="mo-row">
           <div class="mo-cell">
             <div class="mo-inputs" style="width:auto">
@@ -105,7 +105,6 @@
                 <option value="2">移入回收站</option>
                 <!-- <option value="3">删除</option> -->
               </select>
-
               <select class="mo-input mo-inputs__cell" v-model="batchType2" :disabled="selectIds.length === 0 || batchType1 != 0">
                 <option value="0">移动到分类</option>
                 <option :value="cat._id" v-for="cat in categoryList" :key="cat._id">
@@ -114,11 +113,10 @@
                 </option>
                 <option value="1">未分类</option>
               </select>
-
               <button class="mo-btn mo-inputs__cell" :disabled="selectIds.length === 0 || (batchType1 == 0 && batchType2 == 0)" @click="bacth">操作</button>
             </div>
           </div>
-          <div class="mo-cell mo-text-right" v-if="count">
+          <div class="mo-cell mo-text-right">
             <mo-paging :pageIndex="params.page" :pageSize="params.limit" :total="count" :showPageSizes="true" @change="pageChange"></mo-paging>
           </div>
         </div>

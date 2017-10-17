@@ -109,11 +109,6 @@
                   <span class="icon"></span>
                   <span>管理员</span>
                 </label>
-                <label class="mo-radio">
-                  <input type="radio" name="role" value="200" v-model="fd.role" />
-                  <span class="icon"></span>
-                  <span>超级管理员</span>
-                </label>
               </div>
               <div class="mo-cell-5">&nbsp;</div>
             </div>

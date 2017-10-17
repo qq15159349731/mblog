@@ -1,6 +1,6 @@
 <template>
   <div class="mb-viewport mo-container-fluid">
-    <mb-breadcrumb :links="breadcrumb"></mb-breadcrumb>
+    <mo-breadcrumb :links="breadcrumb"></mo-breadcrumb>
     <div class="mb-panel">
       <div class="mb-panel-head mo-row">
         <h3 class="mo-cell">
@@ -75,13 +75,13 @@
   </div>
 </template>
 <script>
-import mbBreadcrumb from '@/components/ui/breadcrumb'
+import MoBreadcrumb from '@/components/ui/breadcrumb'
 import MoPaging from '@/components/ui/paging'
 import MoSort from '@/components/ui/sort'
 export default {
   name: 'mb-user-list',
   components: {
-    mbBreadcrumb,
+    MoBreadcrumb,
     MoPaging,
     MoSort
   },
