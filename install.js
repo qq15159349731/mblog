@@ -19,6 +19,7 @@ const User = require('./server/models/user')
 const Nav = require('./server/models/nav')
 const Category = require('./server/models/category')
 const Tag = require('./server/models/tag')
+const Article = require('./server/models/article')
 
 
 //设置默认promise
@@ -95,6 +96,8 @@ async function initSchema(answers) {
 
   await Category.remove({})
 
+  await Article.remove({})
+
   //写入  
   const administrator = new User({
     email: answers.email,
@@ -104,6 +107,7 @@ async function initSchema(answers) {
   })
   await administrator.save()
 
+  //写入导航
   const navs = [{
       name: '首页',
       url: '',
@@ -116,11 +120,26 @@ async function initSchema(answers) {
     }
   ]
 
-
   for (let i = 0; i < 2; i++) {
     let navDoc = new Nav(navs[i])
     await navDoc.save()
   }
+
+  //写入标签
+  const tag = new Tag({
+    name: 'mblog',
+  })
+
+  await tag.save()
+
+  //写入文章
+  const article = new Article({
+    user: administrator._id,
+    title: '欢迎使用MBlog',
+    contents: '恭喜您成功安装了MBlog，这是系统自动生成的演示文章。编辑或者删除它，然后开始您的创作吧！'
+  })
+
+  await article.save()
 
   success('\nSuccessful')
   mongoose.disconnect()
