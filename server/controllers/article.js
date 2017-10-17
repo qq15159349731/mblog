@@ -19,7 +19,7 @@ const Article = require('../models/article')
  * @return {Object} 
  */
 exports.getList = async(req, res) => {
-  const search = U.query(req.query, ['create', 'views', 'comments', 'update'])
+  const search = U.query(req.query, ['create', 'views', 'draft', 'comments', 'update'])
   const query = {
     type: 'article'
   }
@@ -43,6 +43,9 @@ exports.getList = async(req, res) => {
         break
       case 'update':
         sort.updateTime = search.sortType
+        break
+      case 'draft':
+        sort.draft = search.sortType
         break
       case 'comments':
         sort['count.comments'] = search.sortType
@@ -69,6 +72,10 @@ exports.getList = async(req, res) => {
         $exists: false
       }
     }
+  }
+
+  if (search.draft > 0) {
+    query.draft = !!(Number(search.draft) === 2)
   }
 
   const count = await Article.count(query)
@@ -243,16 +250,27 @@ exports.update = async(req, res) => {
       return res.json(R.error(401, 'the article alias has exist'))
   }
 
-  if (!V.is('objectId', post.category))
+  let $unset
+  if (!V.is('objectId', post.category)) {
+    $unset = {
+      category: 1
+    }
     delete post.category
+  }
+
+  const update = Object.create(null)
+
+  update.$set = post
+
+  if ($unset)
+    update.$unset = $unset
+
 
   post.updateTime = Date.now()
 
   await Article.findOneAndUpdate({
       _id: id
-    }, {
-      $set: post
-    }, {
+    }, update, {
       new: true
     })
     .then(async doc => res.json(doc ? R.success(doc) : R.error(404, 'The article not found')))
@@ -281,7 +299,12 @@ exports.remove = async(req, res) => {
 }
 
 
-
+/**
+ * 批量更新
+ * @param  {Object} req  
+ * @param  {Object} res  
+ * @return {Object}  
+ */
 exports.batchUpdate = async(req, res) => {
   const result = V.validate(req.body, {
     action: {
@@ -340,7 +363,7 @@ exports.batchUpdate = async(req, res) => {
     case 1:
       data = {
         $set: {
-          excerpt: false
+          draft: false
         }
       }
       break
@@ -349,7 +372,7 @@ exports.batchUpdate = async(req, res) => {
     case 2:
       data = {
         $set: {
-          excerpt: true
+          draft: true
         }
       }
       break

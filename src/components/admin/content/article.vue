@@ -5,8 +5,13 @@
       <div class="mb-panel-head mo-row">
         <h3 class="mo-cell">
           <div class="mo-inputs">
-            <select class="mo-input mo-inputs__cell" v-model="params.category" @change="search">
+            <select class="mo-input mo-inputs__cell" v-model="params.draft" @change="search" style="width: auto">
               <option value="0">全部文章</option>
+              <option value="1">已发布</option>
+              <option value="2">草稿</option>
+            </select>
+            <select class="mo-input mo-inputs__cell" v-model="params.category" @change="search" style="width: auto">
+              <option value="0">全部分类</option>
               <option value="1">未分类</option>
               <option :value="cat._id" v-for="cat in categoryList" :key="cat._id">
                 <template v-if="cat.isChild">----</template>
@@ -38,10 +43,10 @@
                 <th width="10%">分类</th>
                 <th width="10%">创建者</th>
                 <th width="8%">
-                  <mo-sort v-model="params.sort" name="comments" :type="params.sortType" @change="sortChange">评论</mo-sort>
+                  <mo-sort v-model="params.sort" name="views" :type="params.sortType" @change="sortChange">浏览</mo-sort>
                 </th>
                 <th width="8%">
-                  <mo-sort v-model="params.sort" name="views" :type="params.sortType" @change="sortChange">浏览</mo-sort>
+                  <mo-sort v-model="params.sort" name="draft" :type="params.sortType" @change="sortChange">状态</mo-sort>
                 </th>
                 <th width="12%">
                   <mo-sort v-model="params.sort" name="create" :type="params.sortType" @change="sortChange">创建时间</mo-sort>
@@ -68,8 +73,11 @@
                   <span class="mo-text-negative" v-else>未分类</span>
                 </td>
                 <td>{{item.user.nick}}</td>
-                <td>{{item.count.comments}}</td>
                 <td>{{item.count.views}}</td>
+                <td>
+                  <span class="mo-text-negative" v-if="item.draft">草稿</span>
+                  <span class="mo-text-positive" v-else>已发布</span>
+                </td>
                 <td>{{item.createTime | formatDate('yy-MM-dd hh:mm')}}</td>
                 <td>{{item.updateTime | formatDate('yy-MM-dd hh:mm')}}</td>
                 <td align="right">
@@ -152,7 +160,8 @@ export default {
         page: 1,
         limit: 20,
         sort: '',
-        sortType: ''
+        sortType: '',
+        draft: 0,
       },
       categoryList: [],
       selectIds: [],
