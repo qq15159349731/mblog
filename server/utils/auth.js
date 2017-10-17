@@ -1,7 +1,15 @@
+/**
+ * Token && User Auth
+ * Author : smohan
+ * Website : https://smohan.net
+ * Date: 2017/10/18 
+ */
+
+
 const C = require('../config/')['token']
 const R = require('../utils/result')
 const T = require('../utils/token')
-
+const User = require('../models/user')
 
 /**
  * 获取登录用户信息
@@ -41,7 +49,18 @@ exports.verifyJurisdiction = jurisdiction => {
       await next()
     } else {
       const userInfo = await getLoginUserInfo(req)
-      if (userInfo.role === 200 || (userInfo.jurisdiction && !!~userInfo.jurisdiction.indexOf(jurisdiction))) {} else {
+      const user = await User.findOne({
+        _id: userInfo.id,
+        enabled: true,
+        deleted: false
+      }, {
+        _id: 1,
+        role: 1,
+        jurisdiction: 1
+      })
+      if (!user)
+        return res.json(R.error(405))
+      if (user.role === 200 || (user.jurisdiction && !!~user.jurisdiction.indexOf(jurisdiction))) {} else {
         return res.json(R.error(408))
       }
     }

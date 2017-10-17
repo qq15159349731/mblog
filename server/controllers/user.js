@@ -387,8 +387,6 @@ exports.adminLogin = async(req, res) => {
   const authToken = G.generate(32)
   const signToken = await T.sign({
     id: user._id,
-    role: user.role,
-    jurisdiction: JSON.stringify(user.jurisdiction),
     authToken
   }, C.admin.secret)
 
