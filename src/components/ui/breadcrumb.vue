@@ -1,7 +1,7 @@
 <template>
 	<ol class="mo-breadcrumb">
 		<li>
-			<router-link to="/overview/">MBlog</router-link>
+			<router-link to="/dashboard/">MBlog</router-link>
 		</li>
 		<li v-for="(item, index) in links" :key="index">
 			<router-link :to="item.url" v-if="item.url">{{item.name}}</router-link>

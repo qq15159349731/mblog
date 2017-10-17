@@ -3,7 +3,10 @@
     <mo-breadcrumb :links="breadcrumb"></mo-breadcrumb>
     <div class="mb-panel">
       <div class="mb-panel-head mo-row">
-        <h3 class="mo-cell">文章</h3>
+        <h3 class="mo-cell mo-text-overflow">
+          <template v-if="!id">添加新文章</template>
+          <template v-else>编辑文章（{{fd.title}}）</template>
+        </h3>
         <div class="mo-cell mo-text-right">
           <router-link class="mo-btn mo-btn-link" to="/content/article/" exact>返回</router-link>
           <mo-submit v-model="committing" :click="save"></mo-submit>
@@ -148,13 +151,15 @@ import fields from '../field/article'
 import { isObjectId, extend, getCateMap } from '@/assets/utils/'
 import MoTagPicker from '@/components/ui/tag-picker'
 export default {
-  name: 'mb-user-list',
+  name: 'mb-article-form',
   components: {
     MoSubmit,
     MoBreadcrumb,
     MoTagPicker
   },
   data() {
+    let id = this.$route.params.id
+    id = isObjectId(id) ? id : null
     return {
       breadcrumb: [
         {
@@ -162,6 +167,7 @@ export default {
           name: '内容'
         },
         {
+          url: '/content/article/',
           name: '文章'
         }
       ],
@@ -171,7 +177,7 @@ export default {
       tab: 1,
       marks: fields.marks,
       categoryList: [],
-      id: null
+      id
     }
   },
   methods: {
@@ -211,9 +217,38 @@ export default {
           this.$layer.toast(e.statusText)
           this.committing = false
         })
-    }
+    },
+    getArticleInfo() {
+      const self = this
+      this.$http.get(`/api/article/info/${this.id}`)
+        .then(({ body }) => {
+          if (body.code === 200) {
+            for (let key in this.fd) {
+              if (body.data[key]) {
+                this.fd[key] = body.data[key]
+              }
+            }
+
+            //向编辑器中插入内容
+            this.contentEditor.txt.html(this.fd.contents)
+
+            //密码来控制开关
+            this.fd.encrypt = !!this.fd.password.trim()
+
+          } else {
+            this.$layer.toast(body.message, 2000, {
+              cancel() {
+                self.$router.push('/content/article/')
+              }
+            })
+          }
+        })
+    },
   },
   mounted() {
+    //密码来控制开关
+    this.fd.encrypt = !!this.fd.password.trim()
+
     this.getCategoryList()
 
     this.contentEditor = new wangEditor('#contentEditor')
@@ -221,6 +256,17 @@ export default {
       this.fd.contents = html
     }
     this.contentEditor.create()
+
+    if (this.id) {
+      this.getArticleInfo()
+    }
+
+    this.breadcrumb.push({
+      name: this.id ? `编辑文章` : '添加新文章'
+    })
+  },
+  beforeDestroy() {
+    this.contentEditor = null
   }
 }
 </script>

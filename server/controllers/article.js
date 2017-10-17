@@ -9,6 +9,7 @@ const U = require('../utils/')
 const R = require('../utils/result')
 const V = require('../utils/validate')
 const Auth = require('../utils/auth')
+const Category = require('../models/category')
 const Article = require('../models/article')
 
 /**
@@ -56,7 +57,17 @@ exports.getList = async(req, res) => {
     if (V.is('objectId', search.keyword)) {
       query._id = search.keyword
     } else {
-      query.$or = U.like(['title', 'draft', 'excerpt'], search.keyword)
+      query.$or = U.like(['title', 'excerpt', 'tags'], search.keyword)
+    }
+  }
+
+  if (void 0 !== search.category) {
+    if (V.is('objectId', search.category)) {
+      query.category = search.category
+    } else if (Number(search.category) === 1) {
+      query.category = {
+        $exists: false
+      }
     }
   }
 
@@ -86,6 +97,23 @@ exports.getList = async(req, res) => {
   }) : res.json(R.error(500)))
 }
 
+/**
+ * 根据ID获取文章
+ * @param {Object} req
+ * @param {Object} res
+ * @return {Object} 
+ */
+exports.findById = async(req, res) => {
+  const id = req.params.id
+  if (!V.is('objectId', id))
+    return res.json(R.error(402, V.msgs.objectId))
+
+  await Article.findOne({
+      _id: id
+    })
+    .then(doc => res.json(doc ? R.success(doc) : R.error(404, 'article not found')))
+    .catch(error => res.json(R.error(500, error.message)))
+}
 
 /**
  * 验证字段
@@ -251,3 +279,123 @@ exports.remove = async(req, res) => {
     .then(doc => res.json(doc ? R.success() : R.error(404, 'article not found')))
     .catch(error => res.json(R.error(500, error.message)))
 }
+
+
+
+exports.batchUpdate = async(req, res) => {
+  const result = V.validate(req.body, {
+    action: {
+      rules: 'require|number',
+    },
+    ids: {
+      rules: 'array',
+    },
+  }, ['action', 'ids', 'category'])
+  if (!result.passed)
+    return res.json(R.error(402, result.msg))
+
+  const post = result.data
+
+  const ids = post.ids,
+    len = ids.length
+
+  if (!ids)
+    return R.error(404, 'invalid article list')
+
+  for (let i = 0; i < len; i++) {
+    if (!V.is('objectId', ids[i])) {
+      return R.error(404, 'invalid article list')
+    }
+  }
+
+
+  let data = Object.create(null)
+
+  switch (post.action) {
+    //修改分类
+    case 0:
+      if (V.is('objectId', post.category)) {
+        const category = await Category.findOne({
+          _id: post.category
+        }, {
+          _id: 1
+        })
+        if (!category)
+          return R.error(404, 'The category not found')
+        data = {
+          $set: {
+            category: post.category
+          }
+        }
+      } else {
+        data = {
+          $unset: {
+            category: 1
+          }
+        }
+      }
+      break
+
+      //发布
+    case 1:
+      data = {
+        $set: {
+          excerpt: false
+        }
+      }
+      break
+
+      //回收
+    case 2:
+      data = {
+        $set: {
+          excerpt: true
+        }
+      }
+      break
+    default:
+      return res.json(R.error(402, '未知的操作类型'))
+  }
+
+  await Article.update({
+      _id: {
+        $in: post.ids
+      }
+    }, data, {
+      multi: true
+    })
+    .then(doc => res.json(R.success()))
+    .catch(error => res.json(R.error(500, error.message)))
+
+  return res.json(R.success())
+}
+
+
+// exports.batchRemove = async(req, res) => {
+//   const result = V.validate(req.body, {
+//     action: {
+//       rules: 'require|number',
+//     },
+//     ids: {
+//       rules: 'array',
+//     },
+//   }, ['action', 'ids', 'category'])
+//   if (!result.passed)
+//     return res.json(R.error(402, result.msg))
+
+//   const post = result.data
+
+//   const ids = post.ids,
+//     len = ids.length
+
+//   if (!ids)
+//     return R.error(404, 'invalid article list')
+
+//   for (let i = 0; i < len; i++) {
+//     if (!V.is('objectId', ids[i])) {
+//       return R.error(404, 'invalid article list')
+//     }
+//   }
+
+//   return res.json(R.success())
+// }

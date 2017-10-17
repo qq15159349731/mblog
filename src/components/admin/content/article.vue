@@ -5,7 +5,14 @@
       <div class="mb-panel-head mo-row">
         <h3 class="mo-cell">
           <div class="mo-inputs">
-            <button class="mo-btn" @click="init">全部文章</button>
+            <select class="mo-input mo-inputs__cell" v-model="params.category" @change="search">
+              <option value="0">全部文章</option>
+              <option value="1">未分类</option>
+              <option :value="cat._id" v-for="cat in categoryList" :key="cat._id">
+                <template v-if="cat.isChild">----</template>
+                {{cat.name}}
+              </option>
+            </select>
             <input type="text" placeholder="请输入关键字" class="mo-inputs__cell mo-input input-search" v-model="params.keyword">
             <button class="mo-inputs__cell mo-btn" @click="search">
               <i class="mo-icon-search"></i>
@@ -21,6 +28,12 @@
           <table class="mo-table mo-table-striped" width="100%">
             <thead>
               <tr>
+                <th width="30">
+                  <label class="mo-checkbox">
+                    <input type="checkbox" name="checkAll" v-model="isCheckAll" @change="checkAll" :disabled="list && list.length === 0" />
+                    <span class="icon"></span>
+                  </label>
+                </th>
                 <th width="25%">标题</th>
                 <th width="10%">分类</th>
                 <th width="10%">创建者</th>
@@ -36,15 +49,23 @@
                 <th width="12%">
                   <mo-sort v-model="params.sort" name="update" :type="params.sortType" @change="sortChange">最后修改</mo-sort>
                 </th>
-                <th width="15%" align="right">编辑 | 删除 | 状态</th>
+                <th width="15%" align="right">编辑 | 删除</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="item in list" :key="item._id">
-                <td>{{item.title}}</td>
+                <td>
+                  <label class="mo-checkbox">
+                    <input type="checkbox" name="id" :value="item._id" v-model="selectIds" @change="toggleCheckAll" />
+                    <span class="icon"></span>
+                  </label>
+                </td>
+                <td>
+                  <div class="td-description mo-text-overflow" v-text="item.title"></div>
+                </td>
                 <td>
                   <template v-if="item.category">{{item.category.name}}</template>
-                  <template v-else>未分类</template>
+                  <span class="mo-text-negative" v-else>未分类</span>
                 </td>
                 <td>{{item.user.nick}}</td>
                 <td>{{item.count.comments}}</td>
@@ -53,18 +74,12 @@
                 <td>{{item.updateTime | formatDate('yy-MM-dd hh:mm')}}</td>
                 <td align="right">
                   <div class="mo-btns">
-                    <router-link :to="`/user/${item._id}`" class="mo-btn mo-btn-small">
+                    <router-link :to="`/content/article/${item._id}`" class="mo-btn mo-btn-small">
                       <i class="mo-icon-edit"></i>
                     </router-link>
                     <button class="mo-btn mo-btn-small" @click="remove(item)">
                       <i class="mo-icon-delete"></i>
                     </button>
-                    <div class="mo-btn mo-btn-small">
-                      <label class="mo-switch mo-switch-positive">
-                        <input type="checkbox" v-model="item.enabled" @change="updateEnabled(item)">
-                        <span class="icon"></span>
-                      </label>
-                    </div>
                   </div>
                 </td>
               </tr>
@@ -72,8 +87,33 @@
           </table>
         </div>
       </div>
-      <div class="mb-panel-foot mo-text-right" v-if="count">
-        <mo-paging :pageIndex="params.page" :pageSize="params.limit" :total="count" :showPageSizes="true" @change="pageChange"></mo-paging>
+      <div class="mb-panel-foot">
+        <div class="mo-row">
+          <div class="mo-cell">
+            <div class="mo-inputs" style="width:auto">
+              <select class="mo-input mo-inputs__cell" v-model="batchType1" :disabled="selectIds.length === 0 || batchType2 != 0">
+                <option value="0">选中项</option>
+                <option value="1">发布</option>
+                <option value="2">移入回收站</option>
+                <!-- <option value="3">删除</option> -->
+              </select>
+
+              <select class="mo-input mo-inputs__cell" v-model="batchType2" :disabled="selectIds.length === 0 || batchType1 != 0">
+                <option value="0">移动到分类</option>
+                <option :value="cat._id" v-for="cat in categoryList" :key="cat._id">
+                  <template v-if="cat.isChild">----</template>
+                  {{cat.name}}
+                </option>
+                <option value="1">未分类</option>
+              </select>
+
+              <button class="mo-btn mo-inputs__cell" :disabled="selectIds.length === 0 || (batchType1 == 0 && batchType2 == 0)" @click="bacth">操作</button>
+            </div>
+          </div>
+          <div class="mo-cell mo-text-right" v-if="count">
+            <mo-paging :pageIndex="params.page" :pageSize="params.limit" :total="count" :showPageSizes="true" @change="pageChange"></mo-paging>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -82,6 +122,7 @@
 import MoBreadcrumb from '@/components/ui/breadcrumb'
 import MoPaging from '@/components/ui/paging'
 import MoSort from '@/components/ui/sort'
+import { getCateMap } from '@/assets/utils/'
 export default {
   name: 'mb-user-list',
   components: {
@@ -107,15 +148,45 @@ export default {
       count: 0,
       params: {
         keyword: null,
+        category: 0,
         page: 1,
         limit: 20,
         sort: '',
         sortType: ''
       },
+      categoryList: [],
+      selectIds: [],
+      isCheckAll: false,
+      batchType1: 0,
+      batchType2: 0,
     }
   },
   methods: {
+    checkAll() {
+      this.selectIds = []
+      if (this.isCheckAll) {
+        for (let i = 0, len = this.list.length; i < len; i++) {
+          this.selectIds.push(this.list[i]._id)
+        }
+      }
+    },
+    toggleCheckAll() {
+      this.isCheckAll = !!(this.selectIds.length === this.list.length)
+    },
+    getCategoryList() {
+      this.$http.get('/api/category/list')
+        .then(({ body }) => {
+          if (body.code === 200) {
+            const map = getCateMap(body.data)
+            this.categoryList = map.list
+          }
+        })
+    },
     getList() {
+      this.selectIds = []
+      this.isCheckAll = false
+      this.batchType1 = this.batchType2 = 0
+
       this.$http.get('/api/article/list', { params: this.params })
         .then(({ body }) => {
           if (body.code === 200) {
@@ -131,10 +202,8 @@ export default {
       this.getList()
     },
     search() {
-      if (this.params.keyword) {
-        this.params.page = 1
-        this.getList()
-      }
+      this.params.page = 1
+      this.getList()
     },
     pageChange(page, limit) {
       this.params.page = page
@@ -163,19 +232,61 @@ export default {
         layer.close()
       })
     },
-    updateEnabled(item) {
-      this.$http.put(`/api/user/enabled/${item._id}`, { enabled: item.enabled })
+
+    bacthAction(method, data) {
+      this.$http.put('/api/article/batch', data)
         .then(({ body }) => {
           if (body.code === 200) {
+            this.getList()
           } else {
-            item.enabled = true
             this.$layer.toast(body.message)
           }
         })
         .catch(e => this.$layer.toast(e.statusText))
+    },
+
+    bacth() {
+      const data = Object.create(null)
+      let method = 'put', message = ''
+
+      if (this.batchType1 != 0) {
+        switch (Number(this.batchType1)) {
+          case 1:
+            data.action = 1
+            message = '您确定要<strong class="mo-text-negative"> 发布 </strong>选中的文章吗？'
+            break
+          case 2:
+            data.action = 2
+            message = '您确定将选中的文章<strong class="mo-text-negative"> 移入回收站 </strong>吗？'
+            break
+          // case 3:
+          //   data.action = 3
+          //   method = 'delete'
+          //   message = '您确定要删除选中的文章吗？<br/><strong class="mo-text-negative">该操作不可逆！</strong>'
+          //   break
+        }
+      } else if (this.batchType2 != 0) {
+        data.action = 0
+        data.category = this.batchType2
+      }
+      data.ids = this.selectIds
+
+      if (!data.ids.length) {
+        return
+      }
+
+      if (data.action !== 0) {
+        this.$layer.confirm(message, (layer) => {
+          this.bacthAction(method, data)
+          layer.close()
+        })
+      } else {
+        this.bacthAction(method, data)
+      }
     }
   },
   mounted() {
+    this.getCategoryList()
     this.init()
   }
 }

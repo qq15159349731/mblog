@@ -28,6 +28,7 @@ exports.query = (query, sorts = []) => {
   data.skip = (page - 1) * pageSize
   data.limit = pageSize
   data.keyword = query.keyword ? decodeURIComponent(query.keyword.trim().replace('/', '')) : null
+
   if (sorts && sorts.length) {
     let sort = query.sort
     let sortType = query.sortType === 'desc' ? -1 : 1

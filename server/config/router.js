@@ -66,9 +66,12 @@ module.exports = router => {
 
 
     .get('/article/list', verifyAdminToken, Article.getList)
+    .get('/article/info/:id([0-9a-fA-F]{24})', verifyAdminToken, Article.findById)
     .post('/article', verifyAdminToken, verifyJurisdiction('article-add'), Article.add)
     .put('/article/:id([0-9a-fA-F]{24})', verifyAdminToken, verifyJurisdiction('article-update'), Article.update)
     .delete('/article/:id([0-9a-fA-F]{24})', verifyAdminToken, verifyJurisdiction('article-remove'), Article.remove)
+    .put('/article/batch', verifyAdminToken, verifyJurisdiction('article-update'), Article.batchUpdate)
+  //.delete('/article/batch', verifyAdminToken, verifyJurisdiction('article-remove'), Article.batchRemove)
 
 
 

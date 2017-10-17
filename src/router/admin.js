@@ -75,6 +75,9 @@ export default new Router({
         }, {
           path: 'article/new',
           component: ConArticleFrom
+        }, {
+          path: 'article/:id',
+          component: ConArticleFrom
         }, ]
       },
       {
