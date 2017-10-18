@@ -5,7 +5,6 @@
       <div class="mb-panel-head mo-row">
         <h3 class="mo-cell">
           <div class="mo-inputs">
-            <button class="mo-btn" @click="init">全部用户</button>
             <input type="text" placeholder="请输入关键字" class="mo-inputs__cell mo-input input-search" v-model="params.keyword">
             <button class="mo-inputs__cell mo-btn" @click="search">
               <i class="mo-icon-search"></i>
@@ -118,16 +117,9 @@ export default {
         })
         .catch(e => this.$layer.toast(e.statusText))
     },
-    init() {
-      this.params.keyword = ''
+    search() {
       this.params.page = 1
       this.getList()
-    },
-    search() {
-      if (this.params.keyword) {
-        this.params.page = 1
-        this.getList()
-      }
     },
     pageChange(page, limit) {
       this.params.page = page
@@ -169,7 +161,7 @@ export default {
     }
   },
   mounted() {
-    this.init()
+    this.getList()
   }
 }
 </script>

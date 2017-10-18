@@ -81,6 +81,14 @@ exports.findById = async(req, res) => {
 
   await Page.findOne({
       _id: id
+    }, {
+      _id: 1,
+      title: 1,
+      alias: 1,
+      contents: 1,
+      password: 1,
+      allowComment: 1,
+      allowReward: 1
     })
     .then(doc => res.json(doc ? R.success(doc) : R.error(404, 'page not found')))
     .catch(error => res.json(R.error(500, error.message)))
@@ -192,10 +200,10 @@ exports.update = async(req, res) => {
 
   post.updateTime = Date.now()
 
-  await Article.findOneAndUpdate({
+  await Page.findOneAndUpdate({
       _id: id
     }, {
-      $set : post
+      $set: post
     }, {
       new: true
     })

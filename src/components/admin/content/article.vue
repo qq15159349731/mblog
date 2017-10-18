@@ -3,7 +3,7 @@
     <mo-breadcrumb :links="breadcrumb"></mo-breadcrumb>
     <div class="mb-panel">
       <div class="mb-panel-head mo-row">
-        <h3 class="mo-cell">
+        <div class="mo-cell">
           <div class="mo-inputs">
             <select class="mo-input mo-inputs__cell" v-model="params.draft" @change="search" style="width: auto">
               <option value="0">全部文章</option>
@@ -23,7 +23,7 @@
               <i class="mo-icon-search"></i>
             </button>
           </div>
-        </h3>
+        </div>
         <div class="mo-cell mo-text-right">
           <router-link to="/content/article/new/" class="mo-btn mo-btn-positive">新增文章</router-link>
         </div>
@@ -66,7 +66,9 @@
                   </label>
                 </td>
                 <td>
-                  <div class="td-description mo-text-overflow" v-text="item.title"></div>
+                  <div class="td-description mo-text-overflow">
+                    <router-link :to="`/content/article/${item._id}`">{{item.title}}</router-link>
+                  </div>
                 </td>
                 <td>
                   <template v-if="item.category">{{item.category.name}}</template>

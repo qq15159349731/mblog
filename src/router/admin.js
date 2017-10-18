@@ -17,6 +17,7 @@ import ConCate from '@/components/admin/content/cate'
 import ConTag from '@/components/admin/content/tag'
 import ConNav from '@/components/admin/content/nav'
 import ConArticleFrom from '@/components/admin/content/article-form'
+import ConPageFrom from '@/components/admin/content/page-form'
 
 import SetGeneral from '@/components/admin/setting/general'
 import SetUpload from '@/components/admin/setting/upload'
@@ -78,6 +79,12 @@ export default new Router({
         }, {
           path: 'article/:id',
           component: ConArticleFrom
+        }, {
+          path: 'page/new',
+          component: ConPageFrom
+        }, {
+          path: 'page/:id',
+          component: ConPageFrom
         }, ]
       },
       {

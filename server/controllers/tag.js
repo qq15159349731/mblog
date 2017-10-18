@@ -18,18 +18,33 @@ const Tag = require('../models/tag')
  * @return {Object} 
  */
 exports.getList = async(req, res) => {
+  const search = U.query(req.query, [])
   const query = {}
   const fields = {}
   const sort = {
     order: -1,
     _id: 1
   }
+  if (search.keyword) {
+    if (V.is('objectId', search.keyword)) {
+      query._id = search.keyword
+    } else {
+      query.$or = U.like(['name'], search.keyword)
+    }
+  }
 
+  const count = await Tag.count(query)
   const docs = await Tag.find(query, fields, {
-    sort
+    sort,
+    skip: search.skip,
+    limit: search.limit
   })
 
-  return res.json(docs ? R.success(docs) : res.json(R.error(500)))
+  return res.json(docs ? R.success({
+    list: docs,
+    count
+  }) : res.json(R.error(500)))
+
 }
 
 

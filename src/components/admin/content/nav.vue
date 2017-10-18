@@ -190,7 +190,9 @@ export default {
     }
   },
   methods: {
-    getPageList() { },
+    getPageList() {
+      //this.$http.get('/api/page/list')
+    },
     getList() {
       this.parentList = []
       this.$http.get('/api/nav/list')

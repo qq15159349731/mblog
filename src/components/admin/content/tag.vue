@@ -3,7 +3,14 @@
     <mo-breadcrumb :links="breadcrumb"></mo-breadcrumb>
     <div class="mb-panel">
       <div class="mb-panel-head mo-row">
-        <h3 class="mo-cell">标签</h3>
+        <div class="mo-cell">
+          <div class="mo-inputs">
+            <input type="text" placeholder="请输入关键字" class="mo-inputs__cell mo-input input-search" v-model="params.keyword">
+            <button class="mo-inputs__cell mo-btn" @click="search">
+              <i class="mo-icon-search"></i>
+            </button>
+          </div>
+        </div>
         <div class="mo-cell mo-text-right">
           <button class="mo-btn mo-btn-positive" @click="formModal=true">新增标签</button>
         </div>
@@ -36,6 +43,9 @@
             </tbody>
           </table>
         </div>
+      </div>
+      <div class="mb-panel-foot mo-text-right" v-if="count">
+        <mo-paging :pageIndex="params.page" :pageSize="params.limit" :total="count" :showPageSizes="true" @change="pageChange"></mo-paging>
       </div>
     </div>
 
@@ -70,6 +80,7 @@
 import MoSubmit from '@/components/ui/submit'
 import MoBreadcrumb from '@/components/ui/breadcrumb'
 import MoModal from '@/components/ui/modal'
+import MoPaging from '@/components/ui/paging'
 import { extend } from '@/assets/utils/'
 import fields from '../field/tag'
 export default {
@@ -77,7 +88,8 @@ export default {
   components: {
     MoBreadcrumb,
     MoModal,
-    MoSubmit
+    MoSubmit,
+    MoPaging
   },
   data() {
     return {
@@ -95,17 +107,33 @@ export default {
       fd: extend({}, fields),
       id: null,
       list: [],
+      count: 0,
+      params: {
+        keyword: null,
+        page: 1,
+        limit: 20
+      },
     }
   },
   methods: {
     getList() {
       this.parentList = []
-      this.$http.get('/api/tag/list')
+      this.$http.get('/api/tag/list', { params: this.params })
         .then(({ body }) => {
           if (body.code === 200) {
-            this.list = body.data
+            this.list = body.data.list
+            this.count = body.data.count
           }
         })
+    },
+    search() {
+      this.params.page = 1
+      this.getList()
+    },
+    pageChange(page, limit) {
+      this.params.page = page
+      this.params.limit = limit
+      this.getList()
     },
     save() {
       let method = 'post'

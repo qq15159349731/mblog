@@ -50,7 +50,7 @@
 
                 <div class="mb-form-group_item">
                   <h5 class="mo-text-description">文章内容：</h5>
-                  <div id="contentEditor"></div>
+                  <mb-editor v-model="fd.contents"></mb-editor>
                 </div>
 
               </div>
@@ -150,12 +150,14 @@ import MoBreadcrumb from '@/components/ui/breadcrumb'
 import fields from '../field/article'
 import { isObjectId, extend, getCateMap } from '@/assets/utils/'
 import MoTagPicker from '@/components/ui/tag-picker'
+import MbEditor from '@/components/ui/editor'
 export default {
   name: 'mb-article-form',
   components: {
     MoSubmit,
     MoBreadcrumb,
-    MoTagPicker
+    MoTagPicker,
+    MbEditor
   },
   data() {
     let id = this.$route.params.id
@@ -173,7 +175,6 @@ export default {
       ],
       committing: false,
       fd: extend({}, fields.field),
-      contentEditor: null,
       tab: 1,
       marks: fields.marks,
       categoryList: [],
@@ -229,9 +230,6 @@ export default {
               }
             }
 
-            //向编辑器中插入内容
-            this.contentEditor.txt.html(this.fd.contents)
-
             //密码来控制开关
             this.fd.encrypt = !!this.fd.password.trim()
 
@@ -251,12 +249,6 @@ export default {
 
     this.getCategoryList()
 
-    this.contentEditor = new wangEditor('#contentEditor')
-    this.contentEditor.customConfig.onchange = (html) => {
-      this.fd.contents = html
-    }
-    this.contentEditor.create()
-
     if (this.id) {
       this.getArticleInfo()
     }
@@ -265,8 +257,6 @@ export default {
       name: this.id ? `编辑文章` : '添加新文章'
     })
   },
-  beforeDestroy() {
-    this.contentEditor = null
-  }
+  beforeDestroy() { }
 }
 </script>
