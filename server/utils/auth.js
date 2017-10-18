@@ -5,7 +5,6 @@
  * Date: 2017/10/18 
  */
 
-
 const C = require('../config/')['token']
 const R = require('../utils/result')
 const T = require('../utils/token')
@@ -13,6 +12,8 @@ const User = require('../models/user')
 
 /**
  * 获取登录用户信息
+ * @param {Object} req
+ * @return {Object}
  */
 const getLoginUserInfo = async(req) => {
   const token = req.cookies[C.admin.key]
@@ -42,24 +43,29 @@ exports.verifyAdminToken = async(req, res, next) => {
   await next()
 }
 
-
+/**
+ * 验证登录用户是否有效
+ * 验证登录用户是否有访问该接口的权限
+ * @param  {Array}   jurisdiction  
+ * @return  {Function} 
+ */
 exports.verifyJurisdiction = jurisdiction => {
   return async(req, res, next) => {
+    const userInfo = await getLoginUserInfo(req)
+    const user = await User.findOne({
+      _id: userInfo.id,
+      enabled: true,
+      deleted: false
+    }, {
+      _id: 1,
+      role: 1,
+      jurisdiction: 1
+    })
+    if (!user)
+      return res.json(R.error(405))
     if (!jurisdiction) {
       await next()
     } else {
-      const userInfo = await getLoginUserInfo(req)
-      const user = await User.findOne({
-        _id: userInfo.id,
-        enabled: true,
-        deleted: false
-      }, {
-        _id: 1,
-        role: 1,
-        jurisdiction: 1
-      })
-      if (!user)
-        return res.json(R.error(405))
       if (user.role === 200 || (user.jurisdiction && !!~user.jurisdiction.indexOf(jurisdiction))) {} else {
         return res.json(R.error(408))
       }
@@ -67,8 +73,6 @@ exports.verifyJurisdiction = jurisdiction => {
     await next()
   }
 }
-
-
 
 
 exports.getLoginUserInfo = getLoginUserInfo

@@ -19,6 +19,7 @@ const Tag = require('../controllers/tag')
 const Nav = require('../controllers/nav')
 
 const Article = require('../controllers/article')
+const Page = require('../controllers/page')
 
 
 module.exports = router => {
@@ -65,13 +66,20 @@ module.exports = router => {
     .delete('/nav/:id([0-9a-fA-F]{24})', verifyAdminToken, verifyJurisdiction('nav-remove'), Nav.remove)
 
 
-    .get('/article/list', verifyAdminToken, Article.getList)
-    .get('/article/info/:id([0-9a-fA-F]{24})', verifyAdminToken, Article.findById)
+    .get('/article/list', verifyAdminToken, verifyJurisdiction('article-view'), Article.getList)
+    .get('/article/info/:id([0-9a-fA-F]{24})', verifyJurisdiction('article-view'), verifyAdminToken, Article.findById)
     .post('/article', verifyAdminToken, verifyJurisdiction('article-add'), Article.add)
     .put('/article/:id([0-9a-fA-F]{24})', verifyAdminToken, verifyJurisdiction('article-update'), Article.update)
-    .delete('/article/:id([0-9a-fA-F]{24})', verifyAdminToken, verifyJurisdiction('article-remove'), Article.remove)
     .put('/article/batch', verifyAdminToken, verifyJurisdiction('article-update'), Article.batchUpdate)
-  //.delete('/article/batch', verifyAdminToken, verifyJurisdiction('article-remove'), Article.batchRemove)
+    .delete('/article/:id([0-9a-fA-F]{24})', verifyAdminToken, verifyJurisdiction('article-remove'), Article.remove)
+
+
+    .get('/page/list', verifyAdminToken, verifyJurisdiction('page-view'), Page.getList)
+    .get('/page/info/:id([0-9a-fA-F]{24})', verifyAdminToken, Page.findById)
+    .post('/page', verifyAdminToken, verifyJurisdiction('page-add'), Page.add)
+    .put('/page/:id([0-9a-fA-F]{24})', verifyAdminToken, verifyJurisdiction('page-update'), Page.update)
+    .delete('/page/:id([0-9a-fA-F]{24})', verifyAdminToken, verifyJurisdiction('page-remove'), Page.remove)
+
 
 
 
