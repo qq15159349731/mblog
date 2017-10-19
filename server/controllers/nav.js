@@ -8,10 +8,11 @@
 const U = require('../utils/')
 const R = require('../utils/result')
 const V = require('../utils/validate')
+const M = require('../utils/message')
 const C = require('../config/')['maxSize']
 const Category = require('../models/category')
 const Nav = require('../models/nav')
-
+const Page = require('../models/article')
 
 /**
  * 获取全部导航
@@ -55,7 +56,7 @@ exports.add = async(req, res) => {
   const count = await Nav.count()
 
   if (count >= C.navigation)
-    return res.json(R.error(403, `The number of navigation can not exceed ${C.navigation}`))
+    return res.json(R.error(403, M.nav.MAXLENGTH))
 
   const type = Number(result.data.type)
   if (type === 0) {
@@ -112,13 +113,13 @@ exports.add = async(req, res) => {
       len = categories.length,
       item
     if (!len)
-      return res.json(R.error(402, 'Please select at least one category'))
+      return res.json(R.error(402, M.nav.CATEGORY_NEED))
 
     //遍历所有分类ID  
     for (i = 0; i < len; i++) {
       item = categories[i]
       if (!V.is('objectId', item))
-        return res.json(R.error(402, `invalid category ${item}`))
+        return res.json(R.error(402, M.nav.CATEGORY_INVALID))
 
       //查找分类
       let category = await Category.findOne({
@@ -130,7 +131,7 @@ exports.add = async(req, res) => {
       })
 
       if (!category)
-        return res.json(R.error(404, `category ${item} not found`))
+        return res.json(R.error(404, M.category.NOT_FOUND))
 
       let nav = new Nav({
         name: category.name,
@@ -168,7 +169,53 @@ exports.add = async(req, res) => {
     return res.json(R.success())
 
   } else if (type === 3) {
+    result = V.validate(req.body, {
+      pages: {
+        rules: 'require|array'
+      }
+    }, ['pages'])
 
+    if (!result.passed)
+      return res.json(R.error(402, result.msg))
+
+    const pages = result.data.pages
+
+    let i = 0,
+      len = pages.length,
+      item
+    if (!len)
+      return res.json(R.error(402, M.nav.PAGE_NEED))
+
+    //遍历所有页面ID  
+    for (i = 0; i < len; i++) {
+      item = pages[i]
+      if (!V.is('objectId', item))
+        return res.json(R.error(402, M.nav.PAGE_INVALID))
+
+      //查找分类
+      let page = await Page.findOne({
+        _id: item
+      }, {
+        _id: 1,
+        title: 1,
+        alias: 1
+      })
+
+      if (!page)
+        return res.json(R.error(404, M.page.NOT_FOUND))
+
+      let nav = new Nav({
+        name: page.title,
+        type: 3,
+        url: page.alias || page._id, //URL别名优先
+        page: page._id
+      })
+
+      await nav.save()
+
+    }
+
+    return res.json(R.success())
   }
 
 }
@@ -216,7 +263,7 @@ exports.update = async(req, res) => {
     delete post.parent
   } else {
     if (!post.url)
-      return res.json(R.error(402, 'URL不能为空'))
+      return res.json(R.error(402, M.nav.URL_INVALID))
   }
 
   await Nav.update({
@@ -245,11 +292,11 @@ exports.remove = async(req, res) => {
   })
 
   if (!nav)
-    return res.json(R.error(404, 'nav not found'))
+    return res.json(R.error(404, M.nav.NOT_FOUND))
 
   //系统导航不允许删除  
   if (Number(nav.type) === 0)
-    return res.json(R.error(404, 'System navigation is not allowed to be deleted'))
+    return res.json(R.error(404, M.nav.FORBIDDEN_DELETED))
 
   //设置子导航为父导航
   await Nav.update({
@@ -266,7 +313,7 @@ exports.remove = async(req, res) => {
   await Nav.findOneAndRemove({
       _id: id
     })
-    .then(doc => res.json(doc ? R.success() : R.error(404, 'nav not found')))
+    .then(doc => res.json(doc ? R.success() : R.error(404, M.nav.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }
 
@@ -297,7 +344,7 @@ exports.updateDisplay = async(req, res) => {
         display: result.data.display
       }
     })
-    .then(doc => res.json(doc ? R.success() : R.error(404, 'nav not found')))
+    .then(doc => res.json(doc ? R.success() : R.error(404, M.nav.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }
 
@@ -328,6 +375,6 @@ exports.updateOrder = async(req, res) => {
         order: Number(result.data.order)
       }
     })
-    .then(doc => res.json(doc ? R.success() : R.error(404, 'nav not found')))
+    .then(doc => res.json(doc ? R.success() : R.error(404, M.nav.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }

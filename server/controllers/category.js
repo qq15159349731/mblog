@@ -9,6 +9,8 @@ const U = require('../utils/')
 const R = require('../utils/result')
 const V = require('../utils/validate')
 const C = require('../config/')['maxSize']
+const M = require('../utils/message')
+
 const Category = require('../models/category')
 const Nav = require('../models/nav')
 
@@ -59,7 +61,7 @@ exports.add = async(req, res) => {
   const count = await Nav.count()
 
   if (count >= C.category)
-    return res.json(R.error(403, `The number of category can not exceed ${C.category}`))
+    return res.json(R.error(403, M.category.MAXLENGTH))
 
   const post = result.data
   const nameDoc = await Category.findOne({
@@ -69,17 +71,20 @@ exports.add = async(req, res) => {
   })
 
   if (nameDoc)
-    return res.json(R.error(401, 'the category name has exist'))
+    return res.json(R.error(401, M.category.NAME_EXISTS))
 
   //如果设置了别名，需要检查别名是否有效
   if (post.alias) {
+    if (U.isKeyWord(post.alias))
+      return res.json(R.error(402, M.system.SYSTEM_KEYWORD))
+
     const aliasDoc = await Category.findOne({
       alias: post.alias
     }, {
       _id: 1
     })
     if (aliasDoc)
-      return res.json(R.error(401, 'the category alias has exist'))
+      return res.json(R.error(401, M.category.ALIAS_EXISTS))
   }
 
   if (post.parent) {
@@ -89,7 +94,7 @@ exports.add = async(req, res) => {
       _id: 1
     })
     if (!parentDoc)
-      return res.json(R.error(404, 'the parent category not found'))
+      return res.json(R.error(404, M.category.PARENT_NOT_FOUND))
   } else {
     delete post.parent
   }
@@ -145,10 +150,12 @@ exports.update = async(req, res) => {
   })
 
   if (nameDoc)
-    return res.json(R.error(401, 'the category name has exist'))
+    return res.json(R.error(401, M.category.NAME_EXISTS))
 
   //如果设置了别名，需要检查别名是否有效
   if (post.alias) {
+    if (U.isKeyWord(post.alias))
+      return res.json(R.error(402, M.system.SYSTEM_KEYWORD))
     const aliasDoc = await Category.findOne({
       alias: post.alias,
       _id: {
@@ -158,7 +165,7 @@ exports.update = async(req, res) => {
       _id: 1
     })
     if (aliasDoc)
-      return res.json(R.error(401, 'the category alias has exist'))
+      return res.json(R.error(401, M.category.ALIAS_EXISTS))
   }
 
   if (post.parent) {
@@ -168,7 +175,7 @@ exports.update = async(req, res) => {
       _id: 1
     })
     if (!parentDoc)
-      return res.json(R.error(404, 'the parent category not found'))
+      return res.json(R.error(404, M.category.PARENT_NOT_FOUND))
   } else {
     delete post.parent
   }
@@ -193,7 +200,7 @@ exports.update = async(req, res) => {
         })
         return res.json(R.success(doc))
       } else {
-        return res.json(R.error(404, 'category not found'))
+        return res.json(R.error(404, M.category.NOT_FOUND))
       }
     })
     .catch(error => res.json(R.error(500, error.message)))
@@ -228,6 +235,6 @@ exports.remove = async(req, res) => {
   await Category.findOneAndRemove({
       _id: id
     })
-    .then(doc => res.json(doc ? R.success() : R.error(404, 'category not found')))
+    .then(doc => res.json(doc ? R.success() : R.error(404, M.category.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }

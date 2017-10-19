@@ -1,15 +1,17 @@
 <template>
   <ul class="catetree-list">
     <template v-if="list.length">
-      <li class="catetree-item" v-for="item in list" :key="item._id" :class="{'catetree-item-child' : item.isChild}">
-      <label class="mo-checkbox">
-        <input type="checkbox" :value="item._id" v-model="model">
-        <span class="icon"></span>
-        <span v-text="item.name"></span>
-      </label>
-    </li>
+      <li class="catetree-item mo-text-overflow" v-for="item in list" :key="item._id" :class="{'catetree-item-child' : item.isChild}">
+        <label class="mo-checkbox">
+          <input type="checkbox" :value="item._id" v-model="model">
+          <span class="icon"></span>
+          <span v-text="item.name"></span>
+        </label>
+      </li>
     </template>
-    <li v-else>暂无类别，<router-link to="/content/cate/">添加类别</router-link></li>
+    <li v-else>暂无分类，
+      <router-link to="/content/cate/">添加分类</router-link>
+    </li>
   </ul>
 </template>
 
@@ -63,6 +65,7 @@ export default {
   padding: 1rem;
   .catetree-item {
     margin: .5rem 0;
+    max-width: 400px;
     &:first-child {
       margin-top: 0;
     }

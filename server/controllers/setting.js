@@ -8,6 +8,7 @@
 const U = require('../utils/')
 const R = require('../utils/result')
 const V = require('../utils/validate')
+const M = require('../utils/message')
 
 const fs = require('fs')
 const path = require("path")
@@ -34,6 +35,6 @@ exports.update = async(req, res) => {
     return res.json(R.success(setting))
 
   } else {
-    return res.json(R.error(404, '要更新的字段不存在'))
+    return res.json(R.error(404, M.setting.NOT_FOUND))
   }
 }

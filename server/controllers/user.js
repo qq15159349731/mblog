@@ -10,10 +10,10 @@ const R = require('../utils/result')
 const V = require('../utils/validate')
 const T = require('../utils/token')
 const C = require('../config/index')['token']
+const M = require('../utils/message')
 const G = require('short-id-gen')
 const Task = require('../utils/task')
 const User = require('../models/user')
-
 
 /**
  * 获取全部用户
@@ -82,7 +82,7 @@ exports.getOne = async(req, res) => {
     }, {
       password: 0
     })
-    .then(doc => res.json(doc ? R.success(doc) : R.error(404, 'user not found')))
+    .then(doc => res.json(doc ? R.success(doc) : R.error(404, M.user.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }
 
@@ -120,7 +120,7 @@ exports.add = async(req, res) => {
   const post = result.data
 
   if (post.role === 200)
-    return res.json(R.error(403, 'Only one super administrator is allowed'))
+    return res.json(R.error(403, M.user.FORBIDDEN_ADD))
 
   const exist = await User.findOne({
     email: post.email
@@ -129,7 +129,7 @@ exports.add = async(req, res) => {
   })
 
   if (exist)
-    return res.json(R.error(401, 'the email has exist'))
+    return res.json(R.error(401, M.user.EMAIL_EXISTS))
 
   post.lastLogin = {
     time: Date.now(),
@@ -183,14 +183,14 @@ exports.update = async(req, res) => {
   })
 
   if (exist && exist._id === id)
-    return res.json(R.error(401, 'the email has exist'))
+    return res.json(R.error(401, M.user.EMAIL_EXISTS))
 
   await User.findOneAndUpdate({
       _id: id
     }, {
       $set: post
     })
-    .then(doc => res.json(doc ? R.success() : R.error(404, 'user not found')))
+    .then(doc => res.json(doc ? R.success() : R.error(404, M.user.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }
 
@@ -223,7 +223,7 @@ exports.updatePassword = async(req, res) => {
     password: 1
   })
 
-  if (!user) return res.json(R.error(404, 'user not found'))
+  if (!user) return res.json(R.error(404, M.user.NOT_FOUND))
 
   const post = {
     oldPassword: User.encryptPassword(result.data.oldPassword),
@@ -231,7 +231,7 @@ exports.updatePassword = async(req, res) => {
   }
 
   if (post.oldPassword !== user.password)
-    return res.json(R.error(402, 'Original password error'))
+    return res.json(R.error(402, M.user.ORIGINAL_PASSWORD_ERROR))
 
 
   await User.update({
@@ -277,7 +277,7 @@ exports.updateEnabled = async(req, res) => {
   //当用户是超管时，判断超管数量是否为大于1，
   //如果是最后一个超管时，禁止操作
   if (user.role === 200)
-    return res.json(R.error(403, 'System administrators are forbidden to set disabled'))
+    return res.json(R.error(403, M.user.FORBIDDEN_DISABLED))
 
   await User.findOneAndUpdate({
       _id: id
@@ -286,7 +286,7 @@ exports.updateEnabled = async(req, res) => {
         enabled: result.data.enabled
       }
     })
-    .then(doc => res.json(doc ? R.success() : R.error(404, 'user not found')))
+    .then(doc => res.json(doc ? R.success() : R.error(404, M.user.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }
 
@@ -313,7 +313,7 @@ exports.remove = async(req, res) => {
   //当用户是超管时，判断超管数量是否为大于1，
   //如果是最后一个超管时，禁止删除
   if (user.role === 200)
-    return res.json(R.error(403, 'System administrators are forbidden to delete'))
+    return res.json(R.error(403, M.user.FORBIDDEN_DELETED))
 
 
   await User.findOneAndUpdate({
@@ -323,7 +323,7 @@ exports.remove = async(req, res) => {
         deleted: true
       }
     })
-    .then(doc => res.json(doc ? R.success() : R.error(404, 'user not found')))
+    .then(doc => res.json(doc ? R.success() : R.error(404, M.user.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }
 
@@ -359,11 +359,11 @@ exports.adminLogin = async(req, res) => {
 
   //not found
   if (!user)
-    return res.json(R.error(404, 'user not found'))
+    return res.json(R.error(404, M.user.NOT_FOUND))
 
   //password error	
   if (!user.comparePassword(post.password))
-    return res.json(R.error(402, 'password error'))
+    return res.json(R.error(402, M.user.PASSWORD_ERROR))
 
   //普通用户禁止访问
   if (user.role === 1)

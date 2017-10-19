@@ -45,6 +45,7 @@ const config = {
     password: '',
   },
 
+  /*********** 以下配置项，请勿修改  ***********/
   token: {
     user: {
       key: 'mblog_user_token',
@@ -59,7 +60,11 @@ const config = {
   maxSize: {
     navigation: 30,
     category: 100
-  }
+  },
+
+
+
+  /*********** 以上配置项，请勿修改  ***********/
 }
 
 for (let k in userSetting) {

@@ -78,6 +78,7 @@ module.exports = router => {
     .get('/page/info/:id([0-9a-fA-F]{24})', verifyAdminToken, Page.findById)
     .post('/page', verifyAdminToken, verifyJurisdiction('page-add'), Page.add)
     .put('/page/:id([0-9a-fA-F]{24})', verifyAdminToken, verifyJurisdiction('page-update'), Page.update)
+    .put('/page/batch', verifyAdminToken, verifyJurisdiction('page-update'), Page.batchUpdate)
     .delete('/page/:id([0-9a-fA-F]{24})', verifyAdminToken, verifyJurisdiction('page-remove'), Page.remove)
 
 

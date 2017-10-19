@@ -8,6 +8,7 @@
 const U = require('../utils/')
 const R = require('../utils/result')
 const V = require('../utils/validate')
+const M = require('../utils/message')
 const Tag = require('../models/tag')
 
 
@@ -75,7 +76,7 @@ exports.add = async(req, res) => {
   })
 
   if (nameDoc)
-    return res.json(R.error(401, 'the tag name has exist'))
+    return res.json(R.error(401, M.tag.NAME_EXISTS))
 
   const tag = new Tag(post)
 
@@ -123,7 +124,7 @@ exports.update = async(req, res) => {
   })
 
   if (nameDoc)
-    return res.json(R.error(401, 'the tag name has exist'))
+    return res.json(R.error(401, M.tag.NAME_EXISTS))
 
   await Tag.update({
       _id: id
@@ -151,6 +152,6 @@ exports.remove = async(req, res) => {
   await Tag.remove({
       _id: id
     })
-    .then(doc => res.json(doc ? R.success() : R.error(404, 'tag not found')))
+    .then(doc => res.json(doc ? R.success() : R.error(404, M.tag.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }

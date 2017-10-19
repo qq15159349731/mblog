@@ -7,6 +7,12 @@
 
 const crypto = require('crypto')
 
+
+//系统预留关键词，这些词不能被用于别名
+//这些关键词有些目前已用到，有些可能会在后续版本上用到，比如增加留言模块等
+const KW = ['login', 'register', 'logout', 'user', 'links', 'category', 'tag', 'c', 'post', 'message']
+
+
 const BooleanTrue = [true, 'true', '1', 1]
 
 exports.boolean = value => !!~BooleanTrue(value)
@@ -64,6 +70,14 @@ exports.like = (fields, keyword) => {
 
 
 /**
+ * 判断是否是系统关键词
+ * @param {String} 
+ * @return {Boolean}
+ */
+exports.isKeyWord = string => !!~KW.indexOf(string.trim().toLowerCase())
+
+
+/**
  * 获取用户头像
  * @param {String} nick 用户昵称
  * @param {String} email 用户邮箱
@@ -100,6 +114,10 @@ const isPlainObject = obj => Object.prototype.toString.call(obj) === '[object Ob
 const isFunction = obj => typeof obj === 'function'
 
 
+/**
+ * 对象克隆
+ * @return {Object}
+ */
 function extend() {
   let options, name, src, copy, copyIsArray, clone,
     target = arguments[0] || {},

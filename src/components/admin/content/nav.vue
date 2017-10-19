@@ -27,13 +27,13 @@
                 <td>
                   <span v-if="item.type === 0">系统</span>
                   <span class="mo-text-primary" v-if="item.type === 1">自定义</span>
-                  <span class="mo-text-negative" v-if="item.type === 2">类别</span>
+                  <span class="mo-text-negative" v-if="item.type === 2">分类</span>
                   <span class="mo-text-positive" v-if="item.type === 3">页面</span>
                 </td>
                 <td class="mo-text-hint">
                   <span v-if="item.type === 0 || item.type === 1">{{item.url}}</span>
                   <span v-if="item.type === 2">/c/{{item.url}}</span>
-                  <span v-if="item.type === 3">/{{item.page}}</span>
+                  <span v-if="item.type === 3">/{{item.url}}</span>
                 </td>
                 <td align="center"><input type="number" class="mo-input input-inline input-number" v-model.lazy="item.order" @change="updateOrder(item)"></td>
                 <td align="right">
@@ -77,7 +77,7 @@
               <label class="mo-radio">
                 <input type="radio" name="type" value="2" v-model="fd.type" />
                 <span class="icon"></span>
-                <span>从类别新建</span>
+                <span>从分类新建</span>
               </label>
               <label class="mo-radio">
                 <input type="radio" name="type" value="3" v-model="fd.type" />
@@ -141,7 +141,9 @@
           </div>
           <!-- 从页面新建 -->
           <div class="mo-clearfix" v-show="fd.type == 3 && !id">
-
+            <div class="mb-scroller" style="max-height:240px;">
+              <mb-pages v-model="pages"></mb-pages>
+            </div>
           </div>
           <br/>
           <div class="mb-modal-form-row mo-text-right">
@@ -161,13 +163,15 @@ import MoModal from '@/components/ui/modal'
 import { getCateMap, extend } from '@/assets/utils/'
 import fields from '../field/nav'
 import MbCateTree from '../common/catetree'
+import MbPages from '../common/page'
 export default {
   name: 'mb-nav-list',
   components: {
     MoBreadcrumb,
     MoModal,
     MoSubmit,
-    MbCateTree
+    MbCateTree,
+    MbPages
   },
   data() {
     return {
@@ -187,12 +191,10 @@ export default {
       list: [],
       parentList: [],
       categories: [],
+      pages: []
     }
   },
   methods: {
-    getPageList() {
-      //this.$http.get('/api/page/list')
-    },
     getList() {
       this.parentList = []
       this.$http.get('/api/nav/list')
@@ -231,6 +233,12 @@ export default {
           data.categories = this.categories
           break
         case 3:
+          if (!this.pages.length) {
+            this.$layer.toast('请至少选择一个页面')
+            this.committing = false
+            return
+          }
+          data.pages = this.pages
           break
       }
 
@@ -273,6 +281,7 @@ export default {
       this.formModal = false
       this.id = null
       this.fd = extend({}, fields)
+      this.committing = false
     },
 
     edit(item) {

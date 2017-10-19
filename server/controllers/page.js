@@ -8,9 +8,11 @@
 const U = require('../utils/')
 const R = require('../utils/result')
 const V = require('../utils/validate')
+const M = require('../utils/message')
 const Auth = require('../utils/auth')
 const Category = require('../models/category')
 const Page = require('../models/article')
+const Nav = require('../models/nav')
 
 /**
  * 获取全部页面
@@ -19,7 +21,7 @@ const Page = require('../models/article')
  * @return {Object} 
  */
 exports.getList = async(req, res) => {
-  const search = U.query(req.query, ['create'])
+  const search = U.query(req.query, ['create', 'draft'])
   const query = {
     type: 'page'
   }
@@ -29,13 +31,17 @@ exports.getList = async(req, res) => {
     alias: 1,
     user: 1,
     createTime: 1,
-    password: 1
+    password: 1,
+    draft: 1
   }
   const sort = {}
   if (search.sort) {
     switch (search.sort) {
       case 'create':
         sort.createTime = search.sortType
+        break
+      case 'draft':
+        sort.draft = search.sortType
         break
     }
   }
@@ -46,6 +52,10 @@ exports.getList = async(req, res) => {
     } else {
       query.$or = U.like(['title'], search.keyword)
     }
+  }
+
+  if (search.draft > 0) {
+    query.draft = !!(Number(search.draft) === 2)
   }
 
   const count = await Page.count(query)
@@ -88,9 +98,10 @@ exports.findById = async(req, res) => {
       contents: 1,
       password: 1,
       allowComment: 1,
-      allowReward: 1
+      allowReward: 1,
+      draft: 1
     })
-    .then(doc => res.json(doc ? R.success(doc) : R.error(404, 'page not found')))
+    .then(doc => res.json(doc ? R.success(doc) : R.error(404, M.page.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }
 
@@ -107,20 +118,20 @@ const checkBody = body => {
     alias: {
       rules: 'alphaDash|min:2',
     },
-    contents: {
-      rules: 'require',
-    },
     allowComment: {
       rules: 'boolean',
     },
     allowReward: {
       rules: 'boolean',
     },
+    draft: {
+      rules: 'boolean',
+    },
     password: {
       rules: 'max:20',
     }
 
-  }, ['title', 'alias', 'contents', 'allowComment', 'allowReward', 'password'])
+  }, ['title', 'alias', 'contents', 'allowComment', 'allowReward', 'password', 'draft'])
 }
 
 
@@ -144,13 +155,16 @@ exports.add = async(req, res) => {
 
   //如果设置了别名，需要检查别名是否有效
   if (post.alias) {
+    if (U.isKeyWord(post.alias))
+      return res.json(R.error(402, M.system.SYSTEM_KEYWORD))
+
     const aliasDoc = await Page.findOne({
       alias: post.alias
     }, {
       _id: 1
     })
     if (aliasDoc)
-      return res.json(R.error(401, 'the page alias has exist'))
+      return res.json(R.error(401, M.page.ALIAS_EXISTS))
   }
 
 
@@ -186,6 +200,8 @@ exports.update = async(req, res) => {
 
   //如果设置了别名，需要检查别名是否有效
   if (post.alias) {
+    if (U.isKeyWord(post.alias))
+      return res.json(R.error(402, M.system.SYSTEM_KEYWORD))
     const aliasDoc = await Page.findOne({
       alias: post.alias,
       _id: {
@@ -195,7 +211,7 @@ exports.update = async(req, res) => {
       _id: 1
     })
     if (aliasDoc)
-      return res.json(R.error(401, 'the page alias has exist'))
+      return res.json(R.error(401, M.page.ALIAS_EXISTS))
   }
 
   post.updateTime = Date.now()
@@ -204,10 +220,22 @@ exports.update = async(req, res) => {
       _id: id
     }, {
       $set: post
-    }, {
-      new: true
     })
-    .then(async doc => res.json(doc ? R.success(doc) : R.error(404, 'The page not found')))
+    .then(async doc => {
+      if (doc) {
+        //更新导航的URL，便于前端直接调用URL而不需要在链表查询其别名
+        await Nav.update({
+          page: id
+        }, {
+          $set: {
+            url: post.alias || id
+          }
+        })
+        return res.json(R.success())
+      } else {
+        return res.json(R.error(404, M.page.NOT_FOUND))
+      }
+    })
     .catch(error => res.json(R.error(500, error.message)))
 }
 
@@ -226,6 +254,77 @@ exports.remove = async(req, res) => {
   await Page.findOneAndRemove({
       _id: id
     })
-    .then(doc => res.json(doc ? R.success() : R.error(404, 'The page not found')))
+    .then(doc => res.json(doc ? R.success() : R.error(404, M.page.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
+}
+
+
+/**
+ * 批量更新页面状态
+ * @param  {Object} req  
+ * @param  {Object} res  
+ * @return {Object}  
+ */
+exports.batchUpdate = async(req, res) => {
+  const result = V.validate(req.body, {
+    action: {
+      rules: 'require|number',
+    },
+    ids: {
+      rules: 'require|array',
+    },
+  }, ['action', 'ids'])
+  if (!result.passed)
+    return res.json(R.error(402, result.msg))
+
+  const post = result.data
+
+  const ids = post.ids,
+    len = ids.length
+
+  if (!ids)
+    return R.error(404, M.page.INVALID_LIST)
+
+  for (let i = 0; i < len; i++) {
+    if (!V.is('objectId', ids[i])) {
+      return R.error(404, M.page.INVALID_LIST)
+    }
+  }
+
+
+  let data = Object.create(null)
+
+  switch (post.action) {
+    //发布
+    case 1:
+      data = {
+        $set: {
+          draft: false
+        }
+      }
+      break
+
+      //回收
+    case 2:
+      data = {
+        $set: {
+          draft: true
+        }
+      }
+      break
+    default:
+      return res.json(R.error(402, M.system.UNKNOWN_ACTION))
+  }
+
+  await Page.update({
+      _id: {
+        $in: post.ids
+      }
+    }, data, {
+      multi: true
+    })
+    .then(doc => res.json(R.success()))
+    .catch(error => res.json(R.error(500, error.message)))
+
+  return res.json(R.success())
 }

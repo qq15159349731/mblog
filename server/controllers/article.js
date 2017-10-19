@@ -8,9 +8,11 @@
 const U = require('../utils/')
 const R = require('../utils/result')
 const V = require('../utils/validate')
+const M = require('../utils/message')
 const Auth = require('../utils/auth')
 const Category = require('../models/category')
 const Article = require('../models/article')
+
 
 /**
  * 获取全部文章
@@ -118,7 +120,7 @@ exports.findById = async(req, res) => {
   await Article.findOne({
       _id: id
     })
-    .then(doc => res.json(doc ? R.success(doc) : R.error(404, 'article not found')))
+    .then(doc => res.json(doc ? R.success(doc) : R.error(404, M.article.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }
 
@@ -137,9 +139,6 @@ const checkBody = body => {
     },
     category: {
       rules: 'objectId',
-    },
-    contents: {
-      rules: 'require',
     },
     tags: {
       rules: 'array',
@@ -191,13 +190,16 @@ exports.add = async(req, res) => {
 
   //如果设置了别名，需要检查别名是否有效
   if (post.alias) {
+    if (U.isKeyWord(post.alias))
+      return res.json(R.error(402, M.system.SYSTEM_KEYWORD))
+
     const aliasDoc = await Article.findOne({
       alias: post.alias
     }, {
       _id: 1
     })
     if (aliasDoc)
-      return res.json(R.error(401, 'the article alias has exist'))
+      return res.json(R.error(401, M.article.ALIAS_EXISTS))
   }
 
   if (!V.is('objectId', post.category))
@@ -238,6 +240,9 @@ exports.update = async(req, res) => {
 
   //如果设置了别名，需要检查别名是否有效
   if (post.alias) {
+    if (U.isKeyWord(post.alias))
+      return res.json(R.error(402, M.system.SYSTEM_KEYWORD))
+
     const aliasDoc = await Article.findOne({
       alias: post.alias,
       _id: {
@@ -247,7 +252,7 @@ exports.update = async(req, res) => {
       _id: 1
     })
     if (aliasDoc)
-      return res.json(R.error(401, 'the article alias has exist'))
+      return res.json(R.error(401, M.article.ALIAS_EXISTS))
   }
 
   let $unset
@@ -273,7 +278,7 @@ exports.update = async(req, res) => {
     }, update, {
       new: true
     })
-    .then(async doc => res.json(doc ? R.success(doc) : R.error(404, 'The article not found')))
+    .then(async doc => res.json(doc ? R.success(doc) : R.error(404, M.article.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }
 
@@ -294,7 +299,7 @@ exports.remove = async(req, res) => {
   await Article.findOneAndRemove({
       _id: id
     })
-    .then(doc => res.json(doc ? R.success() : R.error(404, 'article not found')))
+    .then(doc => res.json(doc ? R.success() : R.error(404, M.article.NOT_FOUND)))
     .catch(error => res.json(R.error(500, error.message)))
 }
 
@@ -311,7 +316,7 @@ exports.batchUpdate = async(req, res) => {
       rules: 'require|number',
     },
     ids: {
-      rules: 'array',
+      rules: 'require|array',
     },
   }, ['action', 'ids', 'category'])
   if (!result.passed)
@@ -323,11 +328,11 @@ exports.batchUpdate = async(req, res) => {
     len = ids.length
 
   if (!ids)
-    return R.error(404, 'invalid article list')
+    return R.error(404, M.article.INVALID_LIST)
 
   for (let i = 0; i < len; i++) {
     if (!V.is('objectId', ids[i])) {
-      return R.error(404, 'invalid article list')
+      return R.error(404, M.article.INVALID_LIST)
     }
   }
 
@@ -344,7 +349,7 @@ exports.batchUpdate = async(req, res) => {
           _id: 1
         })
         if (!category)
-          return R.error(404, 'The category not found')
+          return R.error(404, M.category.NOT_FOUND)
         data = {
           $set: {
             category: post.category
@@ -377,7 +382,7 @@ exports.batchUpdate = async(req, res) => {
       }
       break
     default:
-      return res.json(R.error(402, '未知的操作类型'))
+      return res.json(R.error(402, M.system.UNKNOWN_ACTION))
   }
 
   await Article.update({
@@ -392,33 +397,3 @@ exports.batchUpdate = async(req, res) => {
 
   return res.json(R.success())
 }
-
-
-// exports.batchRemove = async(req, res) => {
-//   const result = V.validate(req.body, {
-//     action: {
-//       rules: 'require|number',
-//     },
-//     ids: {
-//       rules: 'array',
-//     },
-//   }, ['action', 'ids', 'category'])
-//   if (!result.passed)
-//     return res.json(R.error(402, result.msg))
-
-//   const post = result.data
-
-//   const ids = post.ids,
-//     len = ids.length
-
-//   if (!ids)
-//     return R.error(404, 'invalid article list')
-
-//   for (let i = 0; i < len; i++) {
-//     if (!V.is('objectId', ids[i])) {
-//       return R.error(404, 'invalid article list')
-//     }
-//   }
-
-//   return res.json(R.success())
-// }
